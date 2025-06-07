@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 from playwright.async_api import async_playwright
 
 
-class HuaweiCloudDocCrawler:
-    """华为云帮助文档爬虫
+class VolcEngineLinkCollector:
+    """火山引擎帮助文档爬虫
     
-    针对华为云文档侧边栏 DOM 结构进行适配，支持深层级菜单展开。
+    针对火山引擎文档侧边栏 DOM 结构进行适配，支持深层级菜单展开。
     """
 
     def __init__(self, config=None, config_file: str = "config.yaml") -> None:
@@ -26,24 +26,24 @@ class HuaweiCloudDocCrawler:
         """
         if config is not None:
             # 直接使用传入的配置字典
-            hw_conf = config
+            vc_conf = config
         else:
             # 从文件加载配置
             self.raw_config = self._load_config(config_file)
-            hw_conf = self.raw_config.get("huaweicloud", {})
+            vc_conf = self.raw_config.get("volcengine", {})
 
-            if not hw_conf:
-                raise ValueError("config.yaml 缺少 huaweicloud 节点")
+            if not vc_conf:
+                raise ValueError("config.yaml 缺少 volcengine 节点")
 
         # 基本配置
-        self.base_url: str = hw_conf.get("base_url", "https://support.huaweicloud.com")
-        self.crawler_settings: dict = hw_conf.get("crawler_settings", {})
-        self.output_settings: dict = hw_conf.get("output_settings", {})
-        self.products: dict = hw_conf.get("products", {})
+        self.base_url: str = vc_conf.get("base_url", "https://www.volcengine.com")
+        self.crawler_settings: dict = vc_conf.get("crawler_settings", {})
+        self.output_settings: dict = vc_conf.get("output_settings", {})
+        self.products: dict = vc_conf.get("products", {})
 
         # 输出目录
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))
-        self.output_dir = base_output_dir / "huaweicloud"
+        self.output_dir = base_output_dir / "volcengine"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
@@ -57,115 +57,113 @@ class HuaweiCloudDocCrawler:
             ms = int(self.crawler_settings.get("click_delay", 0.2) * 1000)
         await asyncio.sleep(ms / 1000)
 
-    async def _collect_visible_links(self, page, results, seen_urls):
-        """收集当前所有可见的链接"""
-        # 每次都重新查询sidebar，避免元素失效
-        sidebar = await page.query_selector("div.side-nav.sidenav-main")
-        if not sidebar:
-            return 0
-            
-        all_link_elements = await sidebar.query_selector_all("a.js-title.ajax-nav")
-        new_links_count = 0
-        base_url_for_join = self.base_url + "/" if not self.base_url.endswith("/") else self.base_url
-        
-        for link in all_link_elements:
-            try:
-                if not await link.is_visible():
-                    continue
-
-                href = await link.get_attribute("p-href") or await link.get_attribute("href") or ""
-                text = (await link.text_content() or "").strip()
-
-                if not text or not href or href.startswith("javascript:"):
-                    continue
-
-                # 使用 urljoin 保证链接正确拼接
-                final_url = urljoin(base_url_for_join, href)
-
-                if final_url not in seen_urls:
-                    seen_urls.add(final_url)
-                    results.append({"url": final_url, "title": text})
-                    new_links_count += 1
-            except Exception:
-                # 忽略单个元素的错误，继续处理其他元素
-                continue
-                
-        return new_links_count
-
     async def _expand_all_menus_dfs(self, page):
         """
-        以深度优先(DFS)的迭代方式，模拟用户点击行为，将所有可展开的菜单项全部展开。
-        这个方法只负责展开，不收集链接，以提高效率。
+        使用深度优先的方法，通过迭代点击展开所有可折叠的侧边栏菜单。
+        火山引擎的菜单是通过 aria-expanded 属性来控制展开/折叠状态的。
         """
         debug = self.crawler_settings.get("debug_mode", False)
         if debug:
-            print("🔍 [Crawl] 开始深度优先展开所有菜单...")
+            print("🔍 [DFS] 开始展开所有菜单...")
 
-        # 循环直到没有新的可展开项为止
+        # 找到侧边栏容器
+        sidebar_selector = ".arco-menu-inner" #
+        sidebar = await page.query_selector(sidebar_selector)
+        if not sidebar:
+            print(f"⚠️ [DFS] 未找到 {sidebar_selector} 侧边栏容器。")
+            return
+            
         while True:
-            # 每次循环都重新查询所有元素，保证健壮性
-            sidebar = await page.query_selector("div.side-nav.sidenav-main")
-            if not sidebar:
+            # 查找所有当前可见的、但未展开的菜单头
+            expandable_selector = 'div.arco-menu-inline-header[aria-expanded="false"]'
+            
+            headers_to_click = await sidebar.query_selector_all(expandable_selector)
+            
+            # 只处理可见的节点
+            visible_headers = []
+            for header in headers_to_click:
+                if await header.is_visible():
+                    visible_headers.append(header)
+
+            if not visible_headers:
+                # 如果没有更多可展开的菜单，说明已经全部展开
                 if debug:
-                    print("⚠️ [Crawl] 侧边栏消失，结束流程。")
+                    print("✅ [DFS] 没有更多可展开的菜单，展开完成。")
                 break
 
-            expandable_selector = "li.nav-item:not(.unfold):has(> i.foldIcon) > a.js-title"
-            
-            link_to_click = None
-            try:
-                # 找到所有可展开的链接
-                potential_links = await sidebar.query_selector_all(expandable_selector)
-                
-                # 深度优先：只找第一个可见的进行点击
-                for link in potential_links:
-                    if await link.is_visible():
-                        link_to_click = link
-                        break
-            except Exception as e:
-                if debug:
-                    print(f"    ❌ [Crawl] 查询可展开菜单时出错: {e}")
-                break
+            if debug:
+                print(f"  ▶️ [DFS] 发现 {len(visible_headers)} 个新的可展开菜单，正在处理...")
 
-            # 如果没有找到可点击的链接，说明全部展开完毕
-            if not link_to_click:
-                if debug:
-                    print("✅ [Crawl] 没有发现新的可展开菜单，展开完成。")
-                break
+            # 依次点击找到的菜单头以展开子菜单
+            for i, header in enumerate(visible_headers):
+                try:
+                    # 使用 span.label-z77I 获取文本内容
+                    text_element = await header.query_selector("span.label-z77I")
+                    text = await text_element.text_content() if text_element else "未知菜单"
+                    
+                    await header.click(timeout=5000)
+                    if debug and (i + 1) % 10 == 0:
+                        print(f"    🖱️ [DFS] 已点击 ({i+1}/{len(visible_headers)}): {text.strip()}")
+                    # 等待一下，让 JS 有时间渲染 DOM
+                    await self._wait_dom(page, 50) 
+                except Exception as e:
+                    if debug:
+                        text_element = await header.query_selector("span.label-z77I")
+                        text_content = await text_element.text_content() if text_element else "未知元素"
+                        print(f"    ❌ [DFS] 点击 '{text_content.strip()}' 失败: {e}")
             
-            try:
-                if debug:
-                    text = await link_to_click.text_content() or ""
-                    print(f"  ▶️ [Crawl] 点击展开: {text.strip()}")
-                
-                await link_to_click.click(timeout=5000)
-                await page.wait_for_timeout(50) # 轻量级等待，避免过度延迟
-            except Exception as e:
-                if debug:
-                    print(f"    ❌ [Crawl] 点击菜单失败: {e}，尝试进入下一次循环。")
-                # 如果点击失败（例如元素在查询后到点击前消失了），就继续下一次循环
-                continue
-        
-        if debug:
-            print("✅ [Crawl] 所有菜单展开完毕。")
+            # 短暂等待，确保所有点击操作的DOM更新都已完成
+            await self._wait_dom(page, self.crawler_settings.get("click_delay", 0.2) * 1000)
 
     async def _collect_all_links_from_sidebar(self, page):
         """
-        在所有菜单都展开后，一次性收集侧边栏中所有可见的文档链接。
+        在所有菜单都展开后，从侧边栏收集所有有效的文档链接。
+        火山引擎的链接在 a 标签内，文本在 span.label-z77I 中。
         """
         debug = self.crawler_settings.get("debug_mode", False)
         if debug:
-            print("🔍 [Crawl] 开始收集所有链接...")
+            print("🔗 [Collect] 开始收集所有链接...")
+
+        sidebar_selector = ".arco-menu-inner"
+        sidebar = await page.query_selector(sidebar_selector)
+        if not sidebar:
+            return []
+
+        # 获取所有导航链接
+        all_link_elements = await sidebar.query_selector_all("a")
+        if debug:
+            print(f"  🔍 [Collect] 找到 {len(all_link_elements)} 个 <a> 元素。")
 
         results = []
         seen_urls = set()
-        
-        # _collect_visible_links 内部会重新查询 sidebar，是安全的
-        await self._collect_visible_links(page, results, seen_urls)
+
+        for link in all_link_elements:
+            href = await link.get_attribute("href") or ""
+            
+            # 从内部的 span 获取标题
+            title_element = await link.query_selector("span.label-z77I")
+            text = (await title_element.text_content() if title_element else "").strip()
+
+            # 忽略无效条目
+            if not text or not href or not href.startswith("/docs/"):
+                continue
+
+            # 构建绝对URL
+            final_url = urljoin(self.base_url, href)
+            
+            # 过滤非火山引擎文档链接
+            if not final_url.startswith(self.base_url):
+                 continue
+
+            # 去重
+            if final_url in seen_urls:
+                continue
+            seen_urls.add(final_url)
+
+            results.append({"url": final_url, "title": text})
 
         if debug:
-            print(f"✅ [Crawl] 收集完成，共找到 {len(results)} 个有效文档链接。")
-        
+            print(f"✅ [Collect] 收集完成，共找到 {len(results)} 个有效文档链接。")
         return results
 
     async def _crawl_single_doc(self, page, url: str, title: str):
@@ -178,8 +176,8 @@ class HuaweiCloudDocCrawler:
             await asyncio.sleep(0.3)
 
             content = ""
-            # 根据华为云的页面结构猜测可能的正文选择器
-            selectors = [".content-container", ".article-content", "main", ".content", "article"]
+            # 火山引擎正文选择器
+            selectors = [".markdown-body", ".article-wrap", "main", ".article-content"] 
             for sel in selectors:
                 node = await page.query_selector(sel)
                 if node:
@@ -194,7 +192,7 @@ class HuaweiCloudDocCrawler:
 
     async def _save_product(self, key: str, info: dict, docs: list[dict]):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        links_file = self.output_dir / f"huawei_{key}_links_{ts}.txt"
+        links_file = self.output_dir / f"volcengine_{key}_links_{ts}.txt"
 
         with open(links_file, "w", encoding="utf-8") as f:
             f.write(f"{info['name']} 帮助文档链接\n")
@@ -210,7 +208,7 @@ class HuaweiCloudDocCrawler:
                 f.write(f"     {doc['url']}\n\n")
 
         if self.output_settings.get("include_content", False):
-            json_file = self.output_dir / f"huawei_{key}_data_{ts}.json"
+            json_file = self.output_dir / f"volcengine_{key}_data_{ts}.json"
             with open(json_file, "w", encoding="utf-8") as jf:
                 json.dump({"product": info, "docs": docs, "timestamp": ts}, jf, ensure_ascii=False, indent=2)
 
@@ -225,7 +223,7 @@ class HuaweiCloudDocCrawler:
             return False
 
         # 查找最新的文件
-        search_pattern = str(self.output_dir / f"huawei_{key}_links_*.txt")
+        search_pattern = str(self.output_dir / f"volcengine_{key}_links_*.txt")
         existing_files = glob.glob(search_pattern)
         if not existing_files:
             return False
@@ -257,11 +255,13 @@ class HuaweiCloudDocCrawler:
                 page = await context.new_page()
 
                 t0 = time.time()
+                # 1. 打开页面
                 print("1️⃣  加载页面...")
                 await page.goto(info['url'], timeout=self.crawler_settings.get("wait_timeout", 20000), wait_until="domcontentloaded")
-                await page.wait_for_timeout(100)
+                await self._wait_dom(page, 500)
                 print(f"✓ 页面加载完成 ({time.time() - t0:.1f}s)")
 
+                # 2. 保存页面HTML用于调试（如果开启调试模式）
                 if self.crawler_settings.get("debug_mode", False):
                     print("🔍 保存页面HTML用于调试...")
                     html_content = await page.content()
@@ -270,34 +270,39 @@ class HuaweiCloudDocCrawler:
                         f.write(html_content)
                     print(f"📄 页面HTML已保存: {debug_file.name}")
 
-                print("2️⃣  动态展开所有菜单...")
+                # 3. 展开侧边栏
+                print("2️⃣  深度展开菜单 (DFS)...")
                 t1 = time.time()
                 await self._expand_all_menus_dfs(page)
                 print(f"✓ 菜单展开完成 ({time.time() - t1:.1f}s)")
-                
-                print("3️⃣  收集所有链接...")
+
+                # 4. 收集链接
+                print("3️⃣  收集文档链接...")
                 docs_info = await self._collect_all_links_from_sidebar(page)
-                
                 print(f"✓ 共收集到 {len(docs_info)} 条记录")
                 if not docs_info:
                     print("⚠️  未找到任何文档链接，跳过该产品")
                     return None
 
+                # 5. 可选抓取正文
                 final_docs = []
                 if self.output_settings.get("include_content", False):
                     print("4️⃣  抓取正文内容 (这可能需要一些时间)...")
                     for idx, doc_info in enumerate(docs_info, 1):
                         if idx % 20 == 0:
                             print(f"   进度: {idx}/{len(docs_info)}")
+                        # Pass url and title from the dict
                         doc_content = await self._crawl_single_doc(page, doc_info['url'], doc_info['title'])
                         final_docs.append(doc_content)
                         if idx < len(docs_info):
                             await asyncio.sleep(self.crawler_settings.get("crawl_delay", 0.5))
                 else:
+                    # The data is already in the right format, just need to add crawl_time
                     for doc_info in docs_info:
                         doc_info['crawl_time'] = datetime.now().isoformat()
                     final_docs = docs_info
 
+                # 6. 保存
                 print("5️⃣  保存结果...")
                 links_path = await self._save_product(key, info, final_docs)
                 elapsed = time.time() - t0
@@ -331,10 +336,11 @@ class HuaweiCloudDocCrawler:
         return results
 
 
+# 当直接执行该模块时，默认启动单产品爬取
 if __name__ == "__main__":
     async def _self_test():
-        crawler = HuaweiCloudDocCrawler()
-        # 假设在 config.yaml 中已配置了 'vpc' 产品
-        await crawler.crawl_all_products(["vpc"])
+        crawler = VolcEngineLinkCollector()
+        # 指定一个产品进行测试, 例如 eip
+        await crawler.crawl_all_products(["eip"])
 
     asyncio.run(_self_test()) 

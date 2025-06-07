@@ -9,7 +9,7 @@ from playwright.async_api import async_playwright
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 
-class AliyunDocCrawler:
+class AliyunLinkCollector:
     def __init__(self, config=None, config_file="config.yaml"):
         """
         初始化爬虫
@@ -436,7 +436,7 @@ class AliyunDocCrawler:
 
 async def main():
     """主函数"""
-    crawler = AliyunDocCrawler()
+    crawler = AliyunLinkCollector()
     
     # 可以指定要爬取的产品，如果不指定则爬取所有产品
     # selected_products = ['alb', 'nlb', 'ecs']  # 示例：只爬取这几个产品

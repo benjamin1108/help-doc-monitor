@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 from playwright.async_api import async_playwright
 
 
-class VolcEngineDocCrawler:
-    """火山引擎帮助文档爬虫
+class TencentCloudLinkCollector:
+    """腾讯云帮助文档爬虫
     
-    针对火山引擎文档侧边栏 DOM 结构进行适配，支持深层级菜单展开。
+    针对腾讯云文档侧边栏 DOM 结构进行适配，支持深层级菜单展开。
     """
 
     def __init__(self, config=None, config_file: str = "config.yaml") -> None:
@@ -26,24 +26,24 @@ class VolcEngineDocCrawler:
         """
         if config is not None:
             # 直接使用传入的配置字典
-            vc_conf = config
+            tc_conf = config
         else:
             # 从文件加载配置
             self.raw_config = self._load_config(config_file)
-            vc_conf = self.raw_config.get("volcengine", {})
+            tc_conf = self.raw_config.get("tencentcloud", {})
 
-            if not vc_conf:
-                raise ValueError("config.yaml 缺少 volcengine 节点")
+            if not tc_conf:
+                raise ValueError("config.yaml 缺少 tencentcloud 节点")
 
         # 基本配置
-        self.base_url: str = vc_conf.get("base_url", "https://www.volcengine.com")
-        self.crawler_settings: dict = vc_conf.get("crawler_settings", {})
-        self.output_settings: dict = vc_conf.get("output_settings", {})
-        self.products: dict = vc_conf.get("products", {})
+        self.base_url: str = tc_conf.get("base_url", "https://cloud.tencent.com")
+        self.crawler_settings: dict = tc_conf.get("crawler_settings", {})
+        self.output_settings: dict = tc_conf.get("output_settings", {})
+        self.products: dict = tc_conf.get("products", {})
 
         # 输出目录
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))
-        self.output_dir = base_output_dir / "volcengine"
+        self.output_dir = base_output_dir / "tencentcloud"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
@@ -60,56 +60,57 @@ class VolcEngineDocCrawler:
     async def _expand_all_menus_dfs(self, page):
         """
         使用深度优先的方法，通过迭代点击展开所有可折叠的侧边栏菜单。
-        火山引擎的菜单是通过 aria-expanded 属性来控制展开/折叠状态的。
         """
         debug = self.crawler_settings.get("debug_mode", False)
         if debug:
             print("🔍 [DFS] 开始展开所有菜单...")
 
-        # 找到侧边栏容器
-        sidebar_selector = ".arco-menu-inner" #
-        sidebar = await page.query_selector(sidebar_selector)
-        if not sidebar:
-            print(f"⚠️ [DFS] 未找到 {sidebar_selector} 侧边栏容器。")
-            return
-            
+        processed_nodes = set()
+        
         while True:
-            # 查找所有当前可见的、但未展开的菜单头
-            expandable_selector = 'div.arco-menu-inline-header[aria-expanded="false"]'
-            
-            headers_to_click = await sidebar.query_selector_all(expandable_selector)
-            
-            # 只处理可见的节点
-            visible_headers = []
-            for header in headers_to_click:
-                if await header.is_visible():
-                    visible_headers.append(header)
+            # 在每次循环迭代时重新获取 sidebar 元素，以避免元素过时 (stale element)
+            sidebar = await page.query_selector(".doc-aside-wrap")
+            if not sidebar:
+                print("⚠️ [DFS] 未找到或侧边栏已消失。")
+                break
 
-            if not visible_headers:
-                # 如果没有更多可展开的菜单，说明已经全部展开
+            # 查找所有当前可见的可展开项的 **点击目标**（<a> 标签）
+            # 这些是尚未展开的 J-expandable 元素的直接子 a.J-navLayer
+            expandable_links_selector = ".J-expandable:not(.active) > a.J-navLayer"
+            
+            clickable_links = await sidebar.query_selector_all(expandable_links_selector)
+            
+            # 过滤掉已经处理过的节点，防止死循环
+            links_to_click = []
+            for link in clickable_links:
+                node_id = await link.get_attribute("data-node")
+                # 只处理可见的、未处理过的节点
+                is_visible = await link.is_visible()
+                if is_visible and node_id and node_id not in processed_nodes:
+                    links_to_click.append(link)
+                    processed_nodes.add(node_id)
+            
+            if not links_to_click:
+                # 如果没有更多可展开的链接，说明已经全部展开
                 if debug:
                     print("✅ [DFS] 没有更多可展开的菜单，展开完成。")
                 break
 
             if debug:
-                print(f"  ▶️ [DFS] 发现 {len(visible_headers)} 个新的可展开菜单，正在处理...")
+                print(f"  ▶️ [DFS] 发现 {len(links_to_click)} 个新的可展开菜单，正在处理...")
 
-            # 依次点击找到的菜单头以展开子菜单
-            for i, header in enumerate(visible_headers):
+            # 依次点击找到的链接以展开子菜单
+            for i, link_to_click in enumerate(links_to_click):
                 try:
-                    # 使用 span.label-z77I 获取文本内容
-                    text_element = await header.query_selector("span.label-z77I")
-                    text = await text_element.text_content() if text_element else "未知菜单"
-                    
-                    await header.click(timeout=5000)
-                    if debug and (i + 1) % 10 == 0:
-                        print(f"    🖱️ [DFS] 已点击 ({i+1}/{len(visible_headers)}): {text.strip()}")
+                    text = await link_to_click.text_content() or "未知菜单"
+                    await link_to_click.click(timeout=5000)
+                    if debug and i % 10 == 0:
+                        print(f"    🖱️ [DFS] 已点击: {text.strip()}")
                     # 等待一下，让 JS 有时间渲染 DOM
                     await self._wait_dom(page, 50) 
                 except Exception as e:
                     if debug:
-                        text_element = await header.query_selector("span.label-z77I")
-                        text_content = await text_element.text_content() if text_element else "未知元素"
+                        text_content = await link_to_click.text_content()
                         print(f"    ❌ [DFS] 点击 '{text_content.strip()}' 失败: {e}")
             
             # 短暂等待，确保所有点击操作的DOM更新都已完成
@@ -118,40 +119,35 @@ class VolcEngineDocCrawler:
     async def _collect_all_links_from_sidebar(self, page):
         """
         在所有菜单都展开后，从侧边栏收集所有有效的文档链接。
-        火山引擎的链接在 a 标签内，文本在 span.label-z77I 中。
         """
         debug = self.crawler_settings.get("debug_mode", False)
         if debug:
             print("🔗 [Collect] 开始收集所有链接...")
 
-        sidebar_selector = ".arco-menu-inner"
-        sidebar = await page.query_selector(sidebar_selector)
+        sidebar = await page.query_selector(".doc-aside-wrap")
         if not sidebar:
             return []
 
         # 获取所有导航链接
-        all_link_elements = await sidebar.query_selector_all("a")
+        all_link_elements = await sidebar.query_selector_all("a.J-navLayer")
         if debug:
-            print(f"  🔍 [Collect] 找到 {len(all_link_elements)} 个 <a> 元素。")
+            print(f"  🔍 [Collect] 找到 {len(all_link_elements)} 个 a.J-navLayer 元素。")
 
         results = []
         seen_urls = set()
 
         for link in all_link_elements:
             href = await link.get_attribute("href") or ""
-            
-            # 从内部的 span 获取标题
-            title_element = await link.query_selector("span.label-z77I")
-            text = (await title_element.text_content() if title_element else "").strip()
+            text = (await link.text_content() or "").strip()
 
             # 忽略无效条目
-            if not text or not href or not href.startswith("/docs/"):
+            if not text or not href or href.startswith("javascript:"):
                 continue
 
             # 构建绝对URL
             final_url = urljoin(self.base_url, href)
             
-            # 过滤非火山引擎文档链接
+            # 过滤非腾讯云文档链接
             if not final_url.startswith(self.base_url):
                  continue
 
@@ -176,8 +172,7 @@ class VolcEngineDocCrawler:
             await asyncio.sleep(0.3)
 
             content = ""
-            # 火山引擎正文选择器
-            selectors = [".markdown-body", ".article-wrap", "main", ".article-content"] 
+            selectors = [".article-wrap", ".markdown-body", "main", ".article-content"]
             for sel in selectors:
                 node = await page.query_selector(sel)
                 if node:
@@ -192,7 +187,7 @@ class VolcEngineDocCrawler:
 
     async def _save_product(self, key: str, info: dict, docs: list[dict]):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        links_file = self.output_dir / f"volcengine_{key}_links_{ts}.txt"
+        links_file = self.output_dir / f"tencent_{key}_links_{ts}.txt"
 
         with open(links_file, "w", encoding="utf-8") as f:
             f.write(f"{info['name']} 帮助文档链接\n")
@@ -208,7 +203,7 @@ class VolcEngineDocCrawler:
                 f.write(f"     {doc['url']}\n\n")
 
         if self.output_settings.get("include_content", False):
-            json_file = self.output_dir / f"volcengine_{key}_data_{ts}.json"
+            json_file = self.output_dir / f"tencent_{key}_data_{ts}.json"
             with open(json_file, "w", encoding="utf-8") as jf:
                 json.dump({"product": info, "docs": docs, "timestamp": ts}, jf, ensure_ascii=False, indent=2)
 
@@ -223,7 +218,7 @@ class VolcEngineDocCrawler:
             return False
 
         # 查找最新的文件
-        search_pattern = str(self.output_dir / f"volcengine_{key}_links_*.txt")
+        search_pattern = str(self.output_dir / f"tencent_{key}_links_*.txt")
         existing_files = glob.glob(search_pattern)
         if not existing_files:
             return False
@@ -270,13 +265,13 @@ class VolcEngineDocCrawler:
                         f.write(html_content)
                     print(f"📄 页面HTML已保存: {debug_file.name}")
 
-                # 3. 展开侧边栏
+                # 3. 展开侧边栏 (NEW LOGIC)
                 print("2️⃣  深度展开菜单 (DFS)...")
                 t1 = time.time()
                 await self._expand_all_menus_dfs(page)
                 print(f"✓ 菜单展开完成 ({time.time() - t1:.1f}s)")
 
-                # 4. 收集链接
+                # 4. 收集链接 (NEW LOGIC)
                 print("3️⃣  收集文档链接...")
                 docs_info = await self._collect_all_links_from_sidebar(page)
                 print(f"✓ 共收集到 {len(docs_info)} 条记录")
@@ -336,11 +331,10 @@ class VolcEngineDocCrawler:
         return results
 
 
-# 当直接执行该模块时，默认启动单产品爬取
+# 当直接执行该模块时，默认启动单产品爬取 (负载均衡)
 if __name__ == "__main__":
     async def _self_test():
-        crawler = VolcEngineDocCrawler()
-        # 指定一个产品进行测试, 例如 eip
-        await crawler.crawl_all_products(["eip"])
+        crawler = TencentCloudLinkCollector()
+        await crawler.crawl_all_products(["clb"])
 
-    asyncio.run(_self_test()) 
+    asyncio.run(_self_test())

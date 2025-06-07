@@ -17,10 +17,10 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 from config_loader import config_loader
-from help_crawler.aliyun.aliyun_doc_crawler import AliyunDocCrawler
-from help_crawler.tencentcloud.tencentcloud_doc_crawler import TencentCloudDocCrawler
-from help_crawler.huaweicloud.huaweicloud_doc_crawler import HuaweiCloudDocCrawler
-from help_crawler.volcengine.volcengine_doc_crawler import VolcEngineDocCrawler
+from help_crawler.aliyun.aliyun_link_collector import AliyunLinkCollector
+from help_crawler.tencentcloud.tencentcloud_link_collector import TencentCloudLinkCollector
+from help_crawler.huaweicloud.huaweicloud_link_collector import HuaweiCloudLinkCollector
+from help_crawler.volcengine.volcengine_link_collector import VolcEngineLinkCollector
 
 # 导入新库
 try:
@@ -46,10 +46,10 @@ def get_crawler_class(vendor: str):
         爬虫类
     """
     crawler_classes = {
-        'aliyun': AliyunDocCrawler,
-        'tencentcloud': TencentCloudDocCrawler,
-        'huaweicloud': HuaweiCloudDocCrawler,
-        'volcengine': VolcEngineDocCrawler
+        'aliyun': AliyunLinkCollector,
+        'tencentcloud': TencentCloudLinkCollector,
+        'huaweicloud': HuaweiCloudLinkCollector,
+        'volcengine': VolcEngineLinkCollector
     }
     return crawler_classes.get(vendor)
 
