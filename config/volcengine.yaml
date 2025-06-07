@@ -17,56 +17,67 @@ output_settings:
 
 # 火山引擎产品配置
 products:
-  # 负载均衡产品
-  clb:
-    name: "负载均衡CLB"
-    description: "火山引擎负载均衡 (CLB) 帮助文档"
-    url: "https://www.volcengine.com/docs/6406/68126"
-  
-  # 网络基础产品
+  network_overview:
+    name: "网络介绍"
+    url: "https://www.volcengine.com/docs/6968"
+    description: "火山引擎网络产品介绍"
   vpc:
-    name: "私有网络VPC"
-    description: "火山引擎私有网络 (VPC) 帮助文档"
-    url: "https://www.volcengine.com/docs/6370/65578"
+    name: "私有网络"
+    url: "https://www.volcengine.com/docs/6401"
+    description: "私有网络 (VPC) 帮助文档"
   eip:
     name: "公网IP"
-    description: "火山引擎公网IP (EIP) 帮助文档"
-    url: "https://www.volcengine.com/docs/6402/67934"
-  nat:
-    name: "NAT网关"
-    description: "火山引擎NAT网关帮助文档"
-    url: "https://www.volcengine.com/docs/6404/68328"
-  
-  # 连接产品
-  vpn:
-    name: "VPN连接"
-    description: "火山引擎VPN连接帮助文档"
-    url: "https://www.volcengine.com/docs/6408/69332"
-  dc:
-    name: "专线连接"
-    description: "火山引擎专线连接帮助文档"
-    url: "https://www.volcengine.com/docs/6410/69426"
-  privatelink:
-    name: "私网连接"
-    description: "火山引擎私网连接帮助文档"
-    url: "https://www.volcengine.com/docs/6412/69533"
-  
-  # 跨地域网络
-  cen:
-    name: "云企业网CEN"
-    description: "火山引擎云企业网 (CEN) 帮助文档"
-    url: "https://www.volcengine.com/docs/6388/66480"
-  tr:
-    name: "转发路由器TR"
-    description: "火山引擎转发路由器 (TR) 帮助文档"
-    url: "https://www.volcengine.com/docs/6386/66387"
-  
-  # 性能优化
-  ga:
-    name: "全球加速GA"
-    description: "火山引擎全球加速 (GA) 帮助文档"
-    url: "https://www.volcengine.com/docs/6394/67072"
-  bwp:
+    url: "https://www.volcengine.com/docs/6402"
+    description: "公网IP (EIP) 帮助文档"
+  shared_bandwidth_package:
     name: "共享带宽包"
-    description: "火山引擎共享带宽包帮助文档"
-    url: "https://www.volcengine.com/docs/6403/68292" 
+    url: "https://www.volcengine.com/docs/6623"
+    description: "共享带宽包帮助文档"
+  nat_gateway:
+    name: "NAT网关"
+    url: "https://www.volcengine.com/docs/6404"
+    description: "NAT网关帮助文档"
+  ipv6_gateway:
+    name: "IPv6网关"
+    url: "https://www.volcengine.com/docs/6896"
+    description: "IPv6网关帮助文档"
+  cen:
+    name: "云企业网"
+    url: "https://www.volcengine.com/docs/6405"
+    description: "云企业网 (CEN) 帮助文档"
+  transit_router:
+    name: "中转路由器"
+    url: "https://www.volcengine.com/docs/6979"
+    description: "中转路由器 (TR) 帮助文档"
+  clb:
+    name: "负载均衡"
+    url: "https://www.volcengine.com/docs/6406"
+    description: "负载均衡 (CLB) 帮助文档"
+  direct_connect:
+    name: "专线连接"
+    url: "https://www.volcengine.com/docs/6407"
+    description: "专线连接帮助文档"
+  vpn_connection:
+    name: "VPN连接"
+    url: "https://www.volcengine.com/docs/6455"
+    description: "VPN连接帮助文档"
+  alb:
+    name: "应用型负载均衡"
+    url: "https://www.volcengine.com/docs/6767"
+    description: "应用型负载均衡 (ALB) 帮助文档"
+  private_link:
+    name: "私网连接"
+    url: "https://www.volcengine.com/docs/6980"
+    description: "私网连接帮助文档"
+  nic:
+    name: "网络智能中心"
+    url: "https://www.volcengine.com/docs/83782"
+    description: "网络智能中心帮助文档"
+  cloud_connector:
+    name: "云连接器"
+    url: "https://www.volcengine.com/docs/83812"
+    description: "云连接器帮助文档"
+  shared_traffic_package:
+    name: "共享流量包"
+    url: "https://www.volcengine.com/docs/84435"
+    description: "共享流量包帮助文档" 

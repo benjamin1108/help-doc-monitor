@@ -17,10 +17,10 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 from config_loader import config_loader
-from help_crawler.aliyun.aliyun_link_collector import AliyunLinkCollector
-from help_crawler.tencentcloud.tencentcloud_link_collector import TencentCloudLinkCollector
-from help_crawler.huaweicloud.huaweicloud_link_collector import HuaweiCloudLinkCollector
-from help_crawler.volcengine.volcengine_link_collector import VolcEngineLinkCollector
+from help_crawler.link_collector.aliyun.aliyun_link_collector import AliyunLinkCollector
+from help_crawler.link_collector.tencentcloud.tencentcloud_link_collector import TencentCloudLinkCollector
+from help_crawler.link_collector.huaweicloud.huaweicloud_link_collector import HuaweiCloudLinkCollector
+from help_crawler.link_collector.volcengine.volcengine_link_collector import VolcEngineLinkCollector
 
 # 导入新库
 try:
@@ -176,8 +176,9 @@ async def interactive_mode_enhanced():
                     questionary.Choice("1. 查看所有支持的厂商", value='list_vendors'),
                     questionary.Choice("2. 爬取指定厂商的所有产品", value='crawl_vendor'),
                     questionary.Choice("3. 爬取指定厂商的指定产品", value='crawl_product'),
+                    questionary.Choice("4. 爬取所有厂商的所有产品", value='crawl_all'),
                     questionary.Separator(),
-                    questionary.Choice("4. 退出程序", value='exit')
+                    questionary.Choice("5. 退出程序", value='exit')
                 ],
                 use_indicator=True
             ).ask_async()
@@ -188,6 +189,12 @@ async def interactive_mode_enhanced():
 
             if action == 'list_vendors':
                 list_vendors()
+
+            elif action == 'crawl_all':
+                console.print(f"\n🚀 即将爬取所有厂商的所有产品...")
+                vendors = config_loader.get_available_vendors()
+                for vendor in vendors:
+                    await run_vendor_crawler(vendor)
 
             elif action in ['crawl_vendor', 'crawl_product']:
                 vendors = config_loader.get_available_vendors()
@@ -213,13 +220,11 @@ async def interactive_mode_enhanced():
                     
                     product_name = products[product]['name']
                     console.print(f"\n🚀 即将爬取 [bold blue]{vendors[vendor]}[/bold blue] - [bold green]{product_name}[/bold green]")
-                    if await questionary.confirm("确认开始爬取吗?", default=True).ask_async():
-                        await run_vendor_crawler(vendor, product)
+                    await run_vendor_crawler(vendor, product)
 
                 else: # crawl_vendor
                     console.print(f"\n🚀 即将爬取 [bold blue]{vendors[vendor]}[/bold blue] 的所有产品")
-                    if await questionary.confirm("确认开始爬取吗?", default=True).ask_async():
-                        await run_vendor_crawler(vendor)
+                    await run_vendor_crawler(vendor)
         
         except KeyboardInterrupt:
             console.print("\n\n[bold yellow]👋 程序已取消，感谢使用！[/bold yellow]\n")
@@ -242,11 +247,12 @@ async def interactive_mode():
         print("  1. 查看所有支持的厂商")
         print("  2. 爬取指定厂商的所有产品")
         print("  3. 爬取指定厂商的指定产品")
-        print("  4. 退出程序")
+        print("  4. 爬取所有厂商的所有产品")
+        print("  5. 退出程序")
         sys.stdout.flush()
         
         try:
-            choice = input("\n请输入选项 (1-4): ").strip()
+            choice = input("\n请输入选项 (1-5): ").strip()
             
             if choice == '1':
                 list_vendors()
@@ -264,9 +270,7 @@ async def interactive_mode():
                 
                 print(f"\n🚀 开始爬取 {vendors[vendor]} 的所有产品...")
                 sys.stdout.flush()
-                confirm = input("确认开始？(y/n): ").strip().lower()
-                if confirm in ['y', 'yes']:
-                    await run_vendor_crawler(vendor)
+                await run_vendor_crawler(vendor)
                 
             elif choice == '3':
                 # 爬取指定厂商的指定产品
@@ -291,16 +295,21 @@ async def interactive_mode():
                 product_name = products[product]['name']
                 print(f"\n🚀 开始爬取 {vendors[vendor]} - {product_name}")
                 sys.stdout.flush()
-                confirm = input("确认开始？(y/n): ").strip().lower()
-                if confirm in ['y', 'yes']:
-                    await run_vendor_crawler(vendor, product)
+                await run_vendor_crawler(vendor, product)
                 
             elif choice == '4':
+                print("\n🚀 开始爬取所有厂商的所有产品...")
+                sys.stdout.flush()
+                vendors = config_loader.get_available_vendors()
+                for vendor_key in vendors.keys():
+                    await run_vendor_crawler(vendor_key)
+
+            elif choice == '5':
                 print("\n👋 感谢使用多云平台帮助文档爬虫！")
                 break
                 
             else:
-                print("❌ 无效的选项，请输入 1-4")
+                print("❌ 无效的选项，请输入 1-5")
                 
         except KeyboardInterrupt:
             print("\n\n👋 程序已取消，感谢使用！")
