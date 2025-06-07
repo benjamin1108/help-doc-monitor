@@ -1,0 +1,42 @@
+# 多云平台帮助文档爬虫主配置文件
+# 
+# 各厂商的详细配置已拆分到 config/ 目录下的独立文件中：
+# - config/aliyun.yaml      - 阿里云配置
+# - config/tencentcloud.yaml - 腾讯云配置  
+# - config/huaweicloud.yaml  - 华为云配置
+# - config/volcengine.yaml   - 火山引擎配置
+
+# 厂商配置文件映射
+vendors:
+  aliyun:
+    name: "阿里云"
+    config_file: "config/aliyun.yaml"
+    description: "阿里云帮助文档爬虫"
+  
+  tencentcloud:
+    name: "腾讯云"
+    config_file: "config/tencentcloud.yaml"
+    description: "腾讯云帮助文档爬虫"
+  
+  huaweicloud:
+    name: "华为云"
+    config_file: "config/huaweicloud.yaml"
+    description: "华为云帮助文档爬虫"
+  
+  volcengine:
+    name: "火山引擎"
+    config_file: "config/volcengine.yaml"
+    description: "火山引擎帮助文档爬虫"
+
+# 全局默认设置（如果厂商配置文件中未指定）
+default_settings:
+  crawler_settings:
+    headless: true
+    wait_timeout: 20000
+    click_delay: 0.2
+    crawl_delay: 0.5
+    debug_mode: false
+  
+  output_settings:
+    base_dir: "out"
+    include_content: false

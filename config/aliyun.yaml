@@ -1,0 +1,84 @@
+# 阿里云帮助文档爬虫配置
+base_url: "https://help.aliyun.com"
+
+# 爬虫设置
+crawler_settings:
+  headless: true  # 是否无头模式
+  wait_timeout: 10000  # 页面加载超时时间(毫秒)
+  click_delay: 0.2  # 点击间隔(秒)
+  crawl_delay: 0.5  # 文档爬取间隔(秒)
+  max_depth: 10  # 最大展开深度
+  debug_mode: false  # 是否启用详细调试输出
+
+# 输出设置
+output_settings:
+  base_dir: "out"  # 输出目录
+  include_content: false  # 是否包含文档内容(仅保存链接时设为false)
+
+# 阿里云产品配置
+products:
+  # 负载均衡产品
+  alb:
+    name: "应用型负载均衡ALB"
+    url: "https://help.aliyun.com/zh/slb/application-load-balancer"
+    description: "应用型负载均衡ALB帮助文档"
+  nlb:
+    name: "网络型负载均衡NLB"
+    url: "https://help.aliyun.com/zh/slb/network-load-balancer"
+    description: "网络型负载均衡NLB帮助文档"
+  clb:
+    name: "传统型负载均衡CLB"
+    url: "https://help.aliyun.com/zh/slb/classic-load-balancer"
+    description: "传统型负载均衡CLB帮助文档"
+  
+  # 网络基础产品
+  vpc: 
+    name: "专有网络VPC"
+    url: "https://help.aliyun.com/zh/vpc/"
+    description: "专有网络VPC帮助文档"
+  eip:
+    name: "弹性公网IP"
+    url: "https://help.aliyun.com/zh/eip/"
+    description: "弹性公网IP帮助文档"
+  nat:
+    name: "NAT网关"
+    url: "https://help.aliyun.com/zh/nat-gateway/"
+    description: "NAT网关帮助文档"
+  
+  # 连接产品
+  vpn:
+    name: "VPN网关"
+    url: "https://help.aliyun.com/zh/vpn-gateway/"
+    description: "VPN网关帮助文档"
+  expressconnect:
+    name: "高速通道"
+    url: "https://help.aliyun.com/zh/express-connect/"
+    description: "高速通道帮助文档"
+  privatelink:
+    name: "私网连接"
+    url: "https://help.aliyun.com/zh/privatelink/"
+    description: "私网连接帮助文档"
+  
+  # 跨地域网络
+  cen:
+    name: "云企业网CEN"
+    url: "https://help.aliyun.com/zh/cen/"
+    description: "云企业网CEN帮助文档"
+  tr:
+    name: "转发路由器TR"
+    url: "https://help.aliyun.com/zh/cen/user-guide/transit-routers"
+    description: "转发路由器TR帮助文档"
+  
+  # 性能优化
+  ga:
+    name: "全球加速GA"
+    url: "https://help.aliyun.com/zh/global-accelerator/"
+    description: "全球加速GA帮助文档"
+  cbwp:
+    name: "共享带宽"
+    url: "https://help.aliyun.com/zh/cbwp/"
+    description: "共享带宽帮助文档"
+  cdt:
+    name: "云数据传输"
+    url: "https://help.aliyun.com/zh/cdt/"
+    description: "云数据传输帮助文档" 

@@ -1,0 +1,71 @@
+# 华为云帮助文档爬虫配置
+base_url: "https://support.huaweicloud.com"
+
+# 爬虫设置
+crawler_settings:
+  headless: true
+  wait_timeout: 20000
+  click_delay: 0.2
+  crawl_delay: 0.5
+  debug_mode: false
+
+# 输出设置
+output_settings:
+  base_dir: "out"
+  include_content: false
+
+# 华为云产品配置
+products:
+  # 负载均衡产品
+  elb:
+    name: "弹性负载均衡ELB"
+    description: "将访问流量自动分发到多台云服务器，扩展应用系统对外的服务能力。"
+    url: "https://support.huaweicloud.com/elb/index.html"
+  
+  # 网络基础产品
+  vpc:
+    name: "虚拟私有云VPC"
+    description: "帮助您构建隔离的、可自定义的网络环境，并提供丰富的网络功能。"
+    url: "https://support.huaweicloud.com/vpc/index.html"
+  eip:
+    name: "弹性公网IP"
+    description: "提供独立的公网IP资源，为云服务器提供访问公网和被公网访问的能力。"
+    url: "https://support.huaweicloud.com/eip/index.html"
+  nat:
+    name: "NAT网关"
+    description: "为VPC内的云主机提供SNAT和DNAT功能，使其可以访问公网或对外提供服务。"
+    url: "https://support.huaweicloud.com/nat/index.html"
+  
+  # 连接产品
+  vpn:
+    name: "VPN网关"
+    description: "在您的本地数据中心和VPC之间，或者VPC与VPC之间建立安全可靠的加密通信。"
+    url: "https://support.huaweicloud.com/vpn/index.html"
+  dc:
+    name: "云专线"
+    description: "建立从企业数据中心到华为云的专用网络连接。"
+    url: "https://support.huaweicloud.com/dc/index.html"
+  vpcep:
+    name: "终端节点"
+    description: "建立VPC与云服务之间的安全私有连接。"
+    url: "https://support.huaweicloud.com/vpcep/index.html"
+  
+  # 跨地域网络
+  cc:
+    name: "云连接CC"
+    description: "帮助您在VPC之间或VPC与云下数据中心间建立高速、稳定、安全的私网连接。"
+    url: "https://support.huaweicloud.com/cc/index.html"
+  er:
+    name: "企业路由器"
+    description: "为企业在云上构建简洁、灵活与高可用的网络。"
+    url: "https://support.huaweicloud.com/er/index.html"
+  
+  # 性能优化
+  ga:
+    name: "全球加速"
+    description: "依托华为全球网络和接入点，实现全球访问加速。"
+    url: "https://support.huaweicloud.com/ga/index.html"
+  cbw:
+    name: "共享带宽"
+    description: "提供带宽共享功能，支持多个弹性公网IP共享一个带宽。"
+    url: "https://support.huaweicloud.com/cbw/index.html" 

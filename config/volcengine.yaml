@@ -1,0 +1,71 @@
+# 火山引擎帮助文档爬虫配置
+base_url: "https://www.volcengine.com"
+
+# 爬虫设置
+crawler_settings:
+  headless: true
+  wait_timeout: 20000
+  click_delay: 0.2
+  crawl_delay: 0.5
+  debug_mode: false
+
+# 输出设置
+output_settings:
+  base_dir: "out"
+  include_content: false
+
+# 火山引擎产品配置
+products:
+  # 负载均衡产品
+  clb:
+    name: "负载均衡CLB"
+    description: "火山引擎负载均衡 (CLB) 帮助文档"
+    url: "https://www.volcengine.com/docs/6406/68126"
+  
+  # 网络基础产品
+  vpc:
+    name: "私有网络VPC"
+    description: "火山引擎私有网络 (VPC) 帮助文档"
+    url: "https://www.volcengine.com/docs/6370/65578"
+  eip:
+    name: "公网IP"
+    description: "火山引擎公网IP (EIP) 帮助文档"
+    url: "https://www.volcengine.com/docs/6402/67934"
+  nat:
+    name: "NAT网关"
+    description: "火山引擎NAT网关帮助文档"
+    url: "https://www.volcengine.com/docs/6404/68328"
+  
+  # 连接产品
+  vpn:
+    name: "VPN连接"
+    description: "火山引擎VPN连接帮助文档"
+    url: "https://www.volcengine.com/docs/6408/69332"
+  dc:
+    name: "专线连接"
+    description: "火山引擎专线连接帮助文档"
+    url: "https://www.volcengine.com/docs/6410/69426"
+  privatelink:
+    name: "私网连接"
+    description: "火山引擎私网连接帮助文档"
+    url: "https://www.volcengine.com/docs/6412/69533"
+  
+  # 跨地域网络
+  cen:
+    name: "云企业网CEN"
+    description: "火山引擎云企业网 (CEN) 帮助文档"
+    url: "https://www.volcengine.com/docs/6388/66480"
+  tr:
+    name: "转发路由器TR"
+    description: "火山引擎转发路由器 (TR) 帮助文档"
+    url: "https://www.volcengine.com/docs/6386/66387"
+  
+  # 性能优化
+  ga:
+    name: "全球加速GA"
+    description: "火山引擎全球加速 (GA) 帮助文档"
+    url: "https://www.volcengine.com/docs/6394/67072"
+  bwp:
+    name: "共享带宽包"
+    description: "火山引擎共享带宽包帮助文档"
+    url: "https://www.volcengine.com/docs/6403/68292" 

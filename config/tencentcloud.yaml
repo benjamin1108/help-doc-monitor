@@ -1,0 +1,107 @@
+# 腾讯云帮助文档爬虫配置
+base_url: "https://cloud.tencent.com"
+
+# 爬虫设置
+crawler_settings:
+  headless: true  # 是否无头模式
+  wait_timeout: 20000  # 页面加载超时时间(毫秒)，腾讯云页面加载较慢
+  click_delay: 0.2  # 点击间隔(秒)，腾讯云需要更长的等待时间
+  crawl_delay: 0.5  # 文档爬取间隔(秒)
+  max_depth: 15 # 最大展开深度，支持深层级菜单（增加到15支持5级菜单）
+  debug_mode: false  # 是否启用详细调试输出
+  strict_mode: false  # 是否启用严格模式（遇到问题时抛出断言错误）
+
+# 输出设置
+output_settings:
+  base_dir: "out"  # 输出目录
+  include_content: false  # 是否包含文档内容(仅保存链接时设为false)
+
+# 腾讯云产品配置
+products:
+  # 云上网络 - 负载均衡产品
+  clb:
+    name: "负载均衡"
+    url: "https://cloud.tencent.com/document/product/214"
+    description: "腾讯云负载均衡帮助文档"
+  gwlb:
+    name: "网关负载均衡"
+    url: "https://cloud.tencent.com/document/product/1451"
+    description: "腾讯云网关负载均衡帮助文档"
+  
+  # 云上网络 - 网络基础产品
+  vpc:
+    name: "私有网络"
+    url: "https://cloud.tencent.com/document/product/215"
+    description: "腾讯云私有网络帮助文档"
+  eni:
+    name: "弹性网卡"
+    url: "https://cloud.tencent.com/document/product/576"
+    description: "腾讯云弹性网卡帮助文档"
+  nat:
+    name: "NAT网关"
+    url: "https://cloud.tencent.com/document/product/552"
+    description: "腾讯云NAT网关帮助文档"
+  fl:
+    name: "网络流日志"
+    url: "https://cloud.tencent.com/document/product/682"
+    description: "腾讯云网络流日志帮助文档"
+  
+  # 云上网络 - 公网产品
+  bwp:
+    name: "共享带宽包"
+    url: "https://cloud.tencent.com/document/product/684"
+    description: "腾讯云共享带宽包帮助文档"
+  sts:
+    name: "共享流量包"
+    url: "https://cloud.tencent.com/document/product/1171"
+    description: "腾讯云共享流量包帮助文档"
+  eipv6:
+    name: "弹性公网IPv6"
+    url: "https://cloud.tencent.com/document/product/1142"
+    description: "腾讯云弹性公网IPv6帮助文档"
+  eip:
+    name: "弹性公网IP"
+    url: "https://cloud.tencent.com/document/product/1199"
+    description: "腾讯云弹性公网IP帮助文档"
+  
+  # 云上网络 - 性能优化
+  hsn:
+    name: "智能高性能网络"
+    url: "https://cloud.tencent.com/document/product/1454"
+    description: "腾讯云智能高性能网络帮助文档"
+  privatelink:
+    name: "私有连接"
+    url: "https://cloud.tencent.com/document/product/1451"
+    description: "腾讯云私有连接帮助文档"
+  anycast:
+    name: "Anycast公网加速"
+    url: "https://cloud.tencent.com/document/product/644"
+    description: "腾讯云Anycast公网加速帮助文档"
+  
+  # 混合云网络 - 连接产品
+  dc:
+    name: "专线接入"
+    url: "https://cloud.tencent.com/document/product/216"
+    description: "腾讯云专线接入帮助文档"
+  ccn:
+    name: "云联网"
+    url: "https://cloud.tencent.com/document/product/877"
+    description: "腾讯云云联网帮助文档"
+  pc:
+    name: "对等连接"
+    url: "https://cloud.tencent.com/document/product/553"
+    description: "腾讯云对等连接帮助文档"
+  vpn:
+    name: "VPN连接"
+    url: "https://cloud.tencent.com/document/product/554"
+    description: "腾讯云VPN连接帮助文档"
+  
+  # 混合云网络 - 全球加速
+  gaap:
+    name: "全球应用加速"
+    url: "https://cloud.tencent.com/document/product/608"
+    description: "腾讯云全球应用加速帮助文档"
+  sdwan:
+    name: "SD-WAN接入服务"
+    url: "https://cloud.tencent.com/document/product/1277"
+    description: "腾讯云SD-WAN接入服务帮助文档" 
