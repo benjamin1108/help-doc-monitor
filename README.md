@@ -4,10 +4,10 @@
 
 ## ✨ 支持的云平台
 
-- ✅ **阿里云** - 13个网络产品，包括负载均衡、VPC、NAT网关等
-- ✅ **腾讯云** - 18个网络产品，覆盖云上网络和混合云网络
-- ✅ **华为云** - 12个网络产品，包括ELB、VPC、专线等
-- ✅ **火山引擎** - 13个网络产品，覆盖网络基础和性能优化
+- ✅ **阿里云**
+- ✅ **腾讯云**
+- ✅ **华为云**
+- ✅ **火山引擎**
 
 ## 🎯 功能特性
 
@@ -353,74 +353,11 @@ products:
 python run_crawler.py --vendor aliyun --product new_product
 ```
 
-### 调试模式
 
-启用调试模式可以查看详细的爬取过程：
-
-```yaml
-crawler_settings:
-  debug_mode: true
-```
-
-调试输出示例：
-```
-🔍 [DFS] 开始展开所有菜单...
-  ▶️ [DFS] 发现 5 个新的可展开菜单，正在处理...
-    🖱️ [DFS] 点击展开: 产品概述
-    🖱️ [DFS] 点击展开: 快速入门
-✅ [DFS] 没有更多可展开的菜单，展开完成。
-🔗 [Collect] 开始收集所有链接...
-✅ [Collect] 收集完成，共找到 156 个有效文档链接。
-```
-
-### 性能优化
-
-1. **调整并发和延迟参数**
-```yaml
-crawler_settings:
-  click_delay: 0.1      # 减少点击延迟
-  crawl_delay: 0.3      # 减少爬取延迟
-  wait_timeout: 15000   # 调整超时时间
-```
-
-2. **禁用图片和CSS加载**（在代码中实现）
-3. **使用无头模式**（默认开启）
 
 ## 🐛 故障排除
 
-### 常见问题
 
-1. **浏览器启动失败**
-   ```bash
-   playwright install chromium
-   ```
-
-2. **模块导入错误**
-   ```bash
-   # 确保所有__init__.py文件存在
-   find src/ -name "__init__.py"
-   ```
-
-3. **配置文件解析错误**
-   - 检查YAML语法（缩进、引号）
-   - 使用在线YAML验证器
-
-4. **网络超时**
-   - 增加 `wait_timeout` 值
-   - 检查网络连接稳定性
-
-5. **华为云不显示在厂商列表**
-   - 确保 `src/help_crawler/__init__.py` 文件存在
-   - 检查模块导入路径
-
-### 错误代码说明
-
-| 错误类型 | 可能原因 | 解决方案 |
-|----------|----------|----------|
-| `ModuleNotFoundError` | 缺少__init__.py | 添加空的__init__.py文件 |
-| `yaml.YAMLError` | 配置文件格式错误 | 检查YAML语法 |
-| `TimeoutError` | 网络或页面加载超时 | 增加wait_timeout值 |
-| `ElementNotFound` | 页面结构变化 | 更新CSS选择器 |
 
 ## 🚀 扩展开发
 
@@ -462,16 +399,6 @@ vendors:
     description: "新厂商文档爬虫"
 ```
 
-### 自定义选择器
-
-不同厂商的页面结构不同，需要适配相应的CSS选择器：
-
-```python
-# 示例：适配新的侧边栏结构
-sidebar_selector = ".new-sidebar-container"
-expandable_selector = ".new-expandable-item:not(.expanded)"
-link_selector = "a.new-doc-link"
-```
 
 ## 📄 许可证
 
