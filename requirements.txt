@@ -1,4 +1,6 @@
 playwright>=1.40.0
 PyYAML>=6.0
-asyncio
-urllib3
+urllib3~=1.26.0
+typing-extensions>=4.5.0
+rich
+questionary

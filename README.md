@@ -60,37 +60,78 @@
 
 ### 环境要求
 
-- Python 3.8+
+- Python 3.10+ 或 Miniforge
 - 网络连接
 
 ### 安装依赖
 
+#### 方式一：使用Miniforge (推荐)
+
 ```bash
-# 克隆项目
+# 1. 安装Miniforge
+# Linux/macOS:
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+bash Miniforge3-Linux-x86_64.sh
+
+# 2. 克隆项目
 git clone https://github.com/benjamin1108/help-doc-monitor.git
 cd help-doc-monitor
 
-# 安装Python依赖
-pip install playwright pyyaml
+# 3. 创建conda环境
+conda create -n help-doc-monitor python=3.12 -y
+conda activate help-doc-monitor
 
-# 安装Playwright浏览器
+# 4. 安装依赖
+pip install -r requirements.txt
+
+# 5. 安装Playwright浏览器
+playwright install chromium
+```
+
+#### 方式二：使用传统Python环境
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/benjamin1108/help-doc-monitor.git
+cd help-doc-monitor
+
+# 2. 创建虚拟环境
+python3 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# 或者 venv\Scripts\activate  # Windows
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 安装Playwright浏览器
 playwright install chromium
 ```
 
 ### 快速开始
 
+#### 使用运行脚本 (推荐)
+
 ```bash
-# 查看所有支持的厂商
+# Unix/Linux系统 - 自动检测conda环境
+./run_crawler.sh --list-vendors
+./run_crawler.sh --vendor aliyun --list-products
+./run_crawler.sh --vendor aliyun
+./run_crawler.sh --vendor aliyun --product vpc
+
+# Windows系统
+run_crawler.bat --list-vendors
+```
+
+#### 直接使用Python
+
+```bash
+# 如果使用conda环境
+conda activate help-doc-monitor
 python run_crawler.py --list-vendors
 
-# 查看指定厂商的产品列表
-python run_crawler.py --vendor aliyun --list-products
-
-# 爬取指定厂商的所有产品
-python run_crawler.py --vendor aliyun
-
-# 爬取指定厂商的指定产品
-python run_crawler.py --vendor aliyun --product vpc
+# 如果使用虚拟环境
+source venv/bin/activate  # Linux/macOS
+python run_crawler.py --list-vendors
 ```
 
 ## 📋 使用方法
