@@ -3,10 +3,11 @@ import json
 import time
 import yaml
 import os
+import glob
 from pathlib import Path
 from playwright.async_api import async_playwright
 from urllib.parse import urljoin
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class AliyunDocCrawler:
     def __init__(self, config=None, config_file="config.yaml"):
@@ -255,12 +256,44 @@ class AliyunDocCrawler:
         
         return links_file, self.output_dir
     
-    async def crawl_product(self, product_key, product_info):
-        """爬取单个产品的文档"""
+    def _should_skip_crawl(self, key: str) -> bool:
+        """
+        根据文件时间戳和配置的间隔，判断是否应该跳过爬取。
+        """
+        interval_hours = self.output_settings.get("recrawl_interval_hours")
+        if not interval_hours or not isinstance(interval_hours, (int, float)) or interval_hours <= 0:
+            return False
+
+        # 查找最新的文件
+        search_pattern = str(self.output_dir / f"aliyun_{key}_links_*.txt")
+        existing_files = glob.glob(search_pattern)
+        if not existing_files:
+            return False
+
+        latest_file = max(existing_files, key=lambda p: Path(p).stat().st_mtime)
+        file_mod_time = datetime.fromtimestamp(Path(latest_file).stat().st_mtime)
+        
+        # 检查文件是否在有效期间内
+        if datetime.now() - file_mod_time < timedelta(hours=interval_hours):
+            print(f"✅ 产品 '{key}' 在 {interval_hours} 小时内已有新文件，本次跳过爬取。")
+            print(f"   📄 文件: {Path(latest_file).name}")
+            return True
+            
+        return False
+
+    async def crawl_product(self, key: str):
+        if self._should_skip_crawl(key):
+            return
+
+        product_info = self.products.get(key)
+        if not product_info:
+            print(f"产品 {key} 未在配置中找到")
+            return
+            
         print(f"\n🚀 开始爬取: {product_info['name']}")
         print(f"📍 URL: {product_info['url']}")
         print("-" * 60)
-        
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(
                 headless=self.crawler_settings['headless'],
@@ -324,7 +357,7 @@ class AliyunDocCrawler:
                 
                 # 5. 保存结果
                 print("5️⃣ 保存结果...")
-                links_file, output_dir = await self.save_product_results(product_key, product_info, documents)
+                links_file, output_dir = await self.save_product_results(key, product_info, documents)
                 
                 total_time = time.time() - start_time
                 print(f"✅ {product_info['name']} 爬取完成！")
@@ -333,7 +366,7 @@ class AliyunDocCrawler:
                 print(f"⏱️  总耗时: {total_time:.1f}s")
                 
                 return {
-                    'product_key': product_key,
+                    'product_key': key,
                     'product_name': product_info['name'],
                     'total_docs': len(documents),
                     'output_dir': str(output_dir),
@@ -341,17 +374,15 @@ class AliyunDocCrawler:
                     'duration': total_time
                 }
                 
+            except Exception as e:
+                print(f"❌ 爬取过程中出现错误: {e}")
             finally:
                 await browser.close()
-    
-    async def crawl_all_products(self, selected_products=None):
-        """爬取所有产品或指定产品的文档"""
-        if selected_products:
-            products_to_crawl = {k: v for k, v in self.products.items() if k in selected_products}
-        else:
-            products_to_crawl = self.products
-        
-        print(f"🎯 准备爬取 {len(products_to_crawl)} 个产品的帮助文档")
+                print("-" * 60)
+
+    async def crawl_all_products(self):
+        """爬取所有配置的产品"""
+        print(f"🎯 准备爬取 {len(self.products)} 个产品的帮助文档")
         print(f"📁 输出目录: {self.output_dir.absolute()}")
         print("-" * 70)
 
@@ -359,10 +390,10 @@ class AliyunDocCrawler:
         total_start_time = time.time()
         
         # 运行选定的爬虫
-        for i, (key, info) in enumerate(products_to_crawl.items(), 1):
-            print(f"[{i}/{len(products_to_crawl)}] 正在处理: {info['name']} ({key})")
+        for i, (key, info) in enumerate(self.products.items(), 1):
+            print(f"[{i}/{len(self.products)}] 正在处理: {info['name']} ({key})")
             try:
-                res = await self.crawl_product(key, info)
+                res = await self.crawl_product(key)
                 if res:
                     results.append(res)
             except Exception as e:
@@ -411,7 +442,7 @@ async def main():
     # selected_products = ['alb', 'nlb', 'ecs']  # 示例：只爬取这几个产品
     selected_products = None  # 爬取所有产品
     
-    results = await crawler.crawl_all_products(selected_products)
+    results = await crawler.crawl_all_products()
     
     print(f"\n🎉 所有任务完成！共处理 {len(results)} 个产品")
 

@@ -2,9 +2,10 @@ import asyncio
 import json
 import time
 import yaml
+import glob
 from pathlib import Path
 from urllib.parse import urljoin
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from playwright.async_api import async_playwright
 
@@ -213,7 +214,35 @@ class VolcEngineDocCrawler:
 
         return links_file
 
+    def _should_skip_crawl(self, key: str) -> bool:
+        """
+        根据文件时间戳和配置的间隔，判断是否应该跳过爬取。
+        """
+        interval_hours = self.output_settings.get("recrawl_interval_hours")
+        if not interval_hours or not isinstance(interval_hours, (int, float)) or interval_hours <= 0:
+            return False
+
+        # 查找最新的文件
+        search_pattern = str(self.output_dir / f"volcengine_{key}_links_*.txt")
+        existing_files = glob.glob(search_pattern)
+        if not existing_files:
+            return False
+
+        latest_file = max(existing_files, key=lambda p: Path(p).stat().st_mtime)
+        file_mod_time = datetime.fromtimestamp(Path(latest_file).stat().st_mtime)
+        
+        # 检查文件是否在有效期间内
+        if datetime.now() - file_mod_time < timedelta(hours=interval_hours):
+            print(f"✅ 产品 '{key}' 在 {interval_hours} 小时内已有新文件，本次跳过爬取。")
+            print(f"   📄 文件: {Path(latest_file).name}")
+            return True
+            
+        return False
+
     async def crawl_product(self, key: str, info: dict):
+        if self._should_skip_crawl(key):
+            return
+
         print(f"\n🚀 开始爬取: {info['name']}")
         print(f"📍 URL: {info['url']}")
         print("-" * 60)

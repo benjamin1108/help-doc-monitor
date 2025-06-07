@@ -9,6 +9,7 @@
 import sys
 import argparse
 import asyncio
+import inspect
 from pathlib import Path
 
 # 添加 src 目录到 Python 路径
@@ -91,8 +92,15 @@ async def run_vendor_crawler(vendor: str, product: str = None):
                 console.print(f"[red]产品 {product} 不存在于 {vendor} 配置中[/red]")
                 return
             
-            console.print(f"爬取产品: [bold cyan]{products[product]['name']}[/bold cyan]")
-            await crawler.crawl_product(product)
+            product_info = products[product]
+            console.print(f"爬取产品: [bold cyan]{product_info['name']}[/bold cyan]")
+            
+            # 检查 crawl_product 方法签名
+            sig = inspect.signature(crawler.crawl_product)
+            if 'info' in sig.parameters:
+                await crawler.crawl_product(product, product_info)
+            else:
+                await crawler.crawl_product(product)
         else:
             # 爬取所有产品
             await crawler.crawl_all_products()

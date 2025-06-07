@@ -14,6 +14,7 @@ crawler_settings:
 output_settings:
   base_dir: "out"  # 输出目录
   include_content: false  # 是否包含文档内容(仅保存链接时设为false)
+  recrawl_interval_hours: 24  # 文件刷新间隔（小时），24小时内不会重新爬取
 
 # 阿里云产品配置
 products:
@@ -76,7 +77,7 @@ products:
     description: "全球加速GA帮助文档"
   cbwp:
     name: "共享带宽"
-    url: "https://help.aliyun.com/zh/cbwp/"
+    url: "https://help.aliyun.com/zh/internet-shared-bandwidth"
     description: "共享带宽帮助文档"
   cdt:
     name: "云数据传输"

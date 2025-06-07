@@ -13,6 +13,7 @@ crawler_settings:
 output_settings:
   base_dir: "out"
   include_content: false
+  recrawl_interval_hours: 24
 
 # 火山引擎产品配置
 products:

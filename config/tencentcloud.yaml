@@ -15,6 +15,7 @@ crawler_settings:
 output_settings:
   base_dir: "out"  # 输出目录
   include_content: false  # 是否包含文档内容(仅保存链接时设为false)
+  recrawl_interval_hours: 24 # 文件刷新间隔（小时），24小时内不会重新爬取
 
 # 腾讯云产品配置
 products:
@@ -67,7 +68,7 @@ products:
   # 云上网络 - 性能优化
   hsn:
     name: "智能高性能网络"
-    url: "https://cloud.tencent.com/document/product/1454"
+    url: "https://cloud.tencent.com/document/product/1779"
     description: "腾讯云智能高性能网络帮助文档"
   privatelink:
     name: "私有连接"
