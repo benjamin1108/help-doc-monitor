@@ -42,9 +42,7 @@ class TencentCloudLinkCollector:
         self.products: dict = tc_conf.get("products", {})
         self.clicked_elements = set()
 
-        # 初始化内容提取器
-        extractor_config = tc_conf.get('content_extractor', {'type': 'simple'})
-        self.content_extractor = get_content_extractor(extractor_config)
+        # 移除内容提取器，只专注于链接收集
         
         # 确保链接输出目录存在
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))

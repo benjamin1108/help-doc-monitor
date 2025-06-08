@@ -29,9 +29,7 @@ class AliyunLinkCollector:
         self.products = self.config['products']
         self.clicked_elements = set()
         
-        # 初始化内容提取器
-        extractor_config = self.config.get('content_extractor', {'type': 'simple'})
-        self.content_extractor = get_content_extractor(extractor_config)
+        # 移除内容提取器，只专注于链接收集
         
         # 确保链接输出目录存在
         base_output_dir = Path(self.output_settings['base_dir'])
@@ -180,48 +178,13 @@ class AliyunLinkCollector:
             print(f"✅ [Collect] 收集完成，共找到 {len(results)} 个有效文档链接。")
         return results
     
-    async def crawl_document(self, page, url, title):
-        """爬取单个文档"""
-        if not self.output_settings['include_content']:
-            # 只返回链接信息，不爬取内容
-            return {
-                'url': url,
-                'title': title,
-                'crawl_time': datetime.now().isoformat()
-            }
-        
-        try:
-            await page.goto(url, timeout=self.crawler_settings['wait_timeout'], wait_until='domcontentloaded')
-            await asyncio.sleep(0.2)
-            
-            # 并行获取内容
-            content_selectors = ['.content-body', '.doc-content', '.article-content', 'main']
-            content = ""
-            
-            for selector in content_selectors:
-                content_element = await page.query_selector(selector)
-                if content_element:
-                    content = await content_element.text_content()
-                    if content and len(content.strip()) > 50:
-                        break
-            
-            page_title = await page.title()
-            
-            return {
-                'url': url,
-                'title': title or page_title,
-                'content': content.strip() if content else "",
-                'crawl_time': datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            return {
-                'url': url,
-                'title': title,
-                'content': "",
-                'error': str(e),
-                'crawl_time': datetime.now().isoformat()
-            }
+    def create_link_record(self, url, title):
+        """创建链接记录，只保存链接信息"""
+        return {
+            'url': url,
+            'title': title,
+            'crawl_time': datetime.now().isoformat()
+        }
     
     async def save_product_results(self, product_key, product_info, documents):
         """保存单个产品的结果"""
@@ -243,23 +206,6 @@ class AliyunLinkCollector:
             for i, doc in enumerate(documents, 1):
                 f.write(f"{i:3d}. {doc['title']}\n")
                 f.write(f"     {doc['url']}\n\n")
-        
-        # 如果包含内容，将JSON文件保存到新的 content 目录
-        if self.output_settings['include_content']:
-            base_output_dir = Path(self.output_settings['base_dir'])
-            json_output_dir = base_output_dir / "content" / "json" / "aliyun"
-            json_output_dir.mkdir(parents=True, exist_ok=True)
-            
-            json_file = json_output_dir / f"aliyun_{product_key}_data_{timestamp}.json"
-            with open(json_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    'product': product_info,
-                    'crawl_info': {
-                        'timestamp': timestamp,
-                        'total_docs': len(documents)
-                    },
-                    'documents': documents
-                }, f, ensure_ascii=False, indent=2)
         
         return links_file, self.output_dir
     
@@ -336,31 +282,10 @@ class AliyunLinkCollector:
                     print("❌ 未找到文档链接")
                     return None
                 
-                # 4. 爬取文档
+                # 4. 创建链接记录
                 documents = []
-                if self.output_settings['include_content']:
-                    print(f"4️⃣ 爬取 {len(docs_info)} 个文档内容...")
-                    crawl_start = time.time()
-                    
-                    for i, doc_info in enumerate(docs_info, 1):
-                        if i % 20 == 0:
-                            print(f"  进度: {i}/{len(docs_info)} ({i/len(docs_info)*100:.1f}%)")
-                        
-                        doc_data = await self.crawl_document(page, doc_info['url'], doc_info['title'])
-                        documents.append(doc_data)
-                        
-                        if i < len(docs_info):
-                            await asyncio.sleep(self.crawler_settings['crawl_delay'])
-                    
-                    print(f"✓ 文档爬取完成 ({time.time() - crawl_start:.1f}s)")
-                else:
-                    # 只保存链接信息
-                    for doc_info in docs_info:
-                        documents.append({
-                            'url': doc_info['url'],
-                            'title': doc_info['title'],
-                            'crawl_time': datetime.now().isoformat()
-                        })
+                for doc_info in docs_info:
+                    documents.append(self.create_link_record(doc_info['url'], doc_info['title']))
                 
                 # 5. 保存结果
                 print("5️⃣ 保存结果...")

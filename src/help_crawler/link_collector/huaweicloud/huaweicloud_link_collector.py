@@ -42,10 +42,6 @@ class HuaweiCloudLinkCollector:
         self.products: dict = hw_conf.get("products", {})
         self.clicked_elements = set()
 
-        # 初始化内容提取器
-        extractor_config = hw_conf.get('content_extractor', {'type': 'simple'})
-        self.content_extractor = get_content_extractor(extractor_config)
-
         # 输出目录
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))
         self.output_dir = base_output_dir / "links" / "huaweicloud"
@@ -173,33 +169,13 @@ class HuaweiCloudLinkCollector:
         
         return results
 
-    async def _crawl_single_doc(self, page, url: str, title: str):
-        """如需抓取正文内容，可在 config.yaml 将 include_content 设为 true"""
-        if not self.output_settings.get("include_content", False):
-            return {"url": url, "title": title, "crawl_time": datetime.now().isoformat()}
-
-        try:
-            await page.goto(url, timeout=self.crawler_settings.get("wait_timeout", 20000), wait_until="domcontentloaded")
-            await asyncio.sleep(0.3)
-
-            content = ""
-            # 根据华为云的页面结构猜测可能的正文选择器
-            selectors = [".content-container", ".article-content", "main", ".content", "article"]
-            for sel in selectors:
-                node = await page.query_selector(sel)
-                if node:
-                    txt = await node.text_content()
-                    if txt and len(txt) > 50:
-                        content = txt.strip()
-                        break
-
-            return {"url": url, "title": title, "content": content, "crawl_time": datetime.now().isoformat()}
-        except Exception as e:
-            return {"url": url, "title": title, "content": "", "error": str(e), "crawl_time": datetime.now().isoformat()}
+    def _create_link_record(self, url: str, title: str):
+        """创建链接记录，只保存链接信息"""
+        return {"url": url, "title": title, "crawl_time": datetime.now().isoformat()}
 
     async def _save_product(self, key: str, info: dict, docs: list[dict]):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        links_file = self.output_dir / f"huaweicloud_{key}_links_{ts}.txt"
+        links_file = self.output_dir / f"huawei_{key}_links_{ts}.txt"
 
         with open(links_file, "w", encoding="utf-8") as f:
             f.write(f"{info['name']} 帮助文档链接\n")
@@ -214,11 +190,6 @@ class HuaweiCloudLinkCollector:
                 f.write(f"{idx:3d}. {doc['title']}\n")
                 f.write(f"     {doc['url']}\n\n")
 
-        if self.output_settings.get("include_content", False):
-            json_file = self.output_dir / f"huaweicloud_{key}_data_{ts}.json"
-            with open(json_file, "w", encoding="utf-8") as jf:
-                json.dump({"product": info, "docs": docs, "timestamp": ts}, jf, ensure_ascii=False, indent=2)
-
         return links_file
 
     def _should_skip_crawl(self, key: str) -> bool:
@@ -228,7 +199,7 @@ class HuaweiCloudLinkCollector:
         recrawl_interval_hours = self.output_settings.get('recrawl_interval_hours', 24)
 
         # 查找最新的文件
-        search_pattern = str(self.output_dir / f"huaweicloud_{key}_links_*.txt")
+        search_pattern = str(self.output_dir / f"huawei_{key}_links_*.txt")
         existing_files = glob.glob(search_pattern)
         if not existing_files:
             return False
@@ -286,20 +257,10 @@ class HuaweiCloudLinkCollector:
                     print("⚠️  未找到任何文档链接，跳过该产品")
                     return None
 
+                # 只保存链接信息，不提取内容
                 final_docs = []
-                if self.output_settings.get("include_content", False):
-                    print("4️⃣  抓取正文内容 (这可能需要一些时间)...")
-                    for idx, doc_info in enumerate(docs_info, 1):
-                        if idx % 20 == 0:
-                            print(f"   进度: {idx}/{len(docs_info)}")
-                        doc_content = await self._crawl_single_doc(page, doc_info['url'], doc_info['title'])
-                        final_docs.append(doc_content)
-                        if idx < len(docs_info):
-                            await asyncio.sleep(self.crawler_settings.get("crawl_delay", 0.5))
-                else:
-                    for doc_info in docs_info:
-                        doc_info['crawl_time'] = datetime.now().isoformat()
-                    final_docs = docs_info
+                for doc_info in docs_info:
+                    final_docs.append(self._create_link_record(doc_info['url'], doc_info['title']))
 
                 print("5️⃣  保存结果...")
                 links_path = await self._save_product(key, info, final_docs)

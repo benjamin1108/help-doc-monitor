@@ -42,9 +42,7 @@ class VolcEngineLinkCollector:
         self.products: dict = vc_conf.get("products", {})
         self.clicked_elements = set()
 
-        # 初始化内容提取器
-        extractor_config = vc_conf.get('content_extractor', {'type': 'simple'})
-        self.content_extractor = get_content_extractor(extractor_config)
+        # 移除内容提取器，只专注于链接收集
 
         # 输出目录
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))

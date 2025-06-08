@@ -31,6 +31,10 @@ try:
     IS_INTERACTIVE_ENHANCED = True
 except ImportError:
     IS_INTERACTIVE_ENHANCED = False
+    # 如果没有安装rich库，使用简单的Console替代
+    class Console:
+        def print(self, *args, **kwargs):
+            print(*args)
 
 console = Console()
 
