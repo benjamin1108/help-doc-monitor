@@ -29,9 +29,13 @@ class AliyunLinkCollector:
         self.products = self.config['products']
         self.clicked_elements = set()
         
-        # 确保阿里云专用输出目录存在
+        # 初始化内容提取器
+        extractor_config = self.config.get('content_extractor', {'type': 'simple'})
+        self.content_extractor = get_content_extractor(extractor_config)
+        
+        # 确保链接输出目录存在
         base_output_dir = Path(self.output_settings['base_dir'])
-        self.output_dir = base_output_dir / "aliyun"
+        self.output_dir = base_output_dir / "links" / "aliyun"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
     def load_config(self, config_file):
@@ -224,8 +228,7 @@ class AliyunLinkCollector:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         product_name = product_info['name']
         
-        # 保存在阿里云专用目录下
-        # 保存链接列表
+        # 保存在链接输出目录下
         links_file = self.output_dir / f"aliyun_{product_key}_links_{timestamp}.txt"
         with open(links_file, 'w', encoding='utf-8') as f:
             f.write(f"{product_name}帮助文档链接\n")
@@ -241,9 +244,13 @@ class AliyunLinkCollector:
                 f.write(f"{i:3d}. {doc['title']}\n")
                 f.write(f"     {doc['url']}\n\n")
         
-        # 如果包含内容，保存JSON文件
+        # 如果包含内容，将JSON文件保存到新的 content 目录
         if self.output_settings['include_content']:
-            json_file = self.output_dir / f"aliyun_{product_key}_data_{timestamp}.json"
+            base_output_dir = Path(self.output_settings['base_dir'])
+            json_output_dir = base_output_dir / "content" / "json" / "aliyun"
+            json_output_dir.mkdir(parents=True, exist_ok=True)
+            
+            json_file = json_output_dir / f"aliyun_{product_key}_data_{timestamp}.json"
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump({
                     'product': product_info,

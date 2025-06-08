@@ -101,4 +101,16 @@ products:
   ec:
     name: "高速通道"
     url: "https://help.aliyun.com/zh/express-connect/"
-    description: "高速通道 (Express Connect) 帮助文档" 
+    description: "高速通道 (Express Connect) 帮助文档"
+
+# 内容提取器配置
+content_extractor:
+  type: "readability" # simple or readability
+  settings:
+    min_content_length: 100
+    # for simple extractor
+    content_selectors:
+      - ".content-body"
+      - ".doc-content"
+      - ".article-content"
+      - "main" 

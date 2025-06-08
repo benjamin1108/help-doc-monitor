@@ -40,10 +40,15 @@ class HuaweiCloudLinkCollector:
         self.crawler_settings: dict = hw_conf.get("crawler_settings", {})
         self.output_settings: dict = hw_conf.get("output_settings", {})
         self.products: dict = hw_conf.get("products", {})
+        self.clicked_elements = set()
+
+        # 初始化内容提取器
+        extractor_config = hw_conf.get('content_extractor', {'type': 'simple'})
+        self.content_extractor = get_content_extractor(extractor_config)
 
         # 输出目录
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))
-        self.output_dir = base_output_dir / "huaweicloud"
+        self.output_dir = base_output_dir / "links" / "huaweicloud"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
@@ -194,7 +199,7 @@ class HuaweiCloudLinkCollector:
 
     async def _save_product(self, key: str, info: dict, docs: list[dict]):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        links_file = self.output_dir / f"huawei_{key}_links_{ts}.txt"
+        links_file = self.output_dir / f"huaweicloud_{key}_links_{ts}.txt"
 
         with open(links_file, "w", encoding="utf-8") as f:
             f.write(f"{info['name']} 帮助文档链接\n")
@@ -210,7 +215,7 @@ class HuaweiCloudLinkCollector:
                 f.write(f"     {doc['url']}\n\n")
 
         if self.output_settings.get("include_content", False):
-            json_file = self.output_dir / f"huawei_{key}_data_{ts}.json"
+            json_file = self.output_dir / f"huaweicloud_{key}_data_{ts}.json"
             with open(json_file, "w", encoding="utf-8") as jf:
                 json.dump({"product": info, "docs": docs, "timestamp": ts}, jf, ensure_ascii=False, indent=2)
 
@@ -220,12 +225,10 @@ class HuaweiCloudLinkCollector:
         """
         根据文件时间戳和配置的间隔，判断是否应该跳过爬取。
         """
-        interval_hours = self.output_settings.get("recrawl_interval_hours")
-        if not interval_hours or not isinstance(interval_hours, (int, float)) or interval_hours <= 0:
-            return False
+        recrawl_interval_hours = self.output_settings.get('recrawl_interval_hours', 24)
 
         # 查找最新的文件
-        search_pattern = str(self.output_dir / f"huawei_{key}_links_*.txt")
+        search_pattern = str(self.output_dir / f"huaweicloud_{key}_links_*.txt")
         existing_files = glob.glob(search_pattern)
         if not existing_files:
             return False
@@ -234,8 +237,8 @@ class HuaweiCloudLinkCollector:
         file_mod_time = datetime.fromtimestamp(Path(latest_file).stat().st_mtime)
         
         # 检查文件是否在有效期间内
-        if datetime.now() - file_mod_time < timedelta(hours=interval_hours):
-            print(f"✅ 产品 '{key}' 在 {interval_hours} 小时内已有新文件，本次跳过爬取。")
+        if datetime.now() - file_mod_time < timedelta(hours=recrawl_interval_hours):
+            print(f"✅ 产品 '{key}' 在 {recrawl_interval_hours} 小时内已有新文件，本次跳过爬取。")
             print(f"   📄 文件: {Path(latest_file).name}")
             return True
             

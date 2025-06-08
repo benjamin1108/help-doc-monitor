@@ -40,10 +40,15 @@ class VolcEngineLinkCollector:
         self.crawler_settings: dict = vc_conf.get("crawler_settings", {})
         self.output_settings: dict = vc_conf.get("output_settings", {})
         self.products: dict = vc_conf.get("products", {})
+        self.clicked_elements = set()
+
+        # 初始化内容提取器
+        extractor_config = vc_conf.get('content_extractor', {'type': 'simple'})
+        self.content_extractor = get_content_extractor(extractor_config)
 
         # 输出目录
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))
-        self.output_dir = base_output_dir / "volcengine"
+        self.output_dir = base_output_dir / "links" / "volcengine"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod

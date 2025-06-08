@@ -68,4 +68,15 @@ products:
   cbw:
     name: "共享带宽"
     description: "提供带宽共享功能，支持多个弹性公网IP共享一个带宽。"
-    url: "https://support.huaweicloud.com/cbw/index.html" 
+    url: "https://support.huaweicloud.com/cbw/index.html"
+
+# 内容提取器配置
+content_extractor:
+  type: "readability" # simple or readability
+  settings:
+    min_content_length: 100
+    # for simple extractor
+    content_selectors:
+      - ".content-body"
+      - ".main-content"
+      - "main" 

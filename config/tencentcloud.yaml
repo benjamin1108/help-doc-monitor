@@ -94,4 +94,20 @@ products:
   sdwan:
     name: "SD-WAN 接入服务"
     url: "https://cloud.tencent.com/document/product/1277"
-    description: "SD-WAN 接入服务帮助文档" 
+    description: "SD-WAN 接入服务帮助文档"
+
+# 内容提取器配置
+content_extractor:
+  type: "raw" # raw, simple or readability
+  settings:
+    # Use 'raw' extractor for Tencent Cloud to preserve table structures.
+    # This selector points to the main content area.
+    content_selector: "#docArticleContent"
+
+    min_content_length: 100
+    # for simple extractor
+    content_selectors:
+      - "#doc-content"
+      - ".J-doc-main"
+      - ".doc-main"
+      - "main" 

@@ -80,4 +80,16 @@ products:
   shared_traffic_package:
     name: "共享流量包"
     url: "https://www.volcengine.com/docs/84435"
-    description: "共享流量包帮助文档" 
+    description: "共享流量包帮助文档"
+
+# 内容提取器配置
+content_extractor:
+  type: "readability" # simple or readability
+  settings:
+    min_content_length: 100
+    # for simple extractor
+    content_selectors:
+      - ".markdown-body"
+      - '[data-testid="page-content"]'
+      - "article"
+      - "main" 

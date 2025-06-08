@@ -40,10 +40,15 @@ class TencentCloudLinkCollector:
         self.crawler_settings: dict = tc_conf.get("crawler_settings", {})
         self.output_settings: dict = tc_conf.get("output_settings", {})
         self.products: dict = tc_conf.get("products", {})
+        self.clicked_elements = set()
 
-        # 输出目录
+        # 初始化内容提取器
+        extractor_config = tc_conf.get('content_extractor', {'type': 'simple'})
+        self.content_extractor = get_content_extractor(extractor_config)
+        
+        # 确保链接输出目录存在
         base_output_dir = Path(self.output_settings.get("base_dir", "out"))
-        self.output_dir = base_output_dir / "tencentcloud"
+        self.output_dir = base_output_dir / "links" / "tencentcloud"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
@@ -187,7 +192,7 @@ class TencentCloudLinkCollector:
 
     async def _save_product(self, key: str, info: dict, docs: list[dict]):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        links_file = self.output_dir / f"tencent_{key}_links_{ts}.txt"
+        links_file = self.output_dir / f"tencentcloud_{key}_links_{ts}.txt"
 
         with open(links_file, "w", encoding="utf-8") as f:
             f.write(f"{info['name']} 帮助文档链接\n")
@@ -203,7 +208,10 @@ class TencentCloudLinkCollector:
                 f.write(f"     {doc['url']}\n\n")
 
         if self.output_settings.get("include_content", False):
-            json_file = self.output_dir / f"tencent_{key}_data_{ts}.json"
+            json_output_dir = self.output_dir.parent / "content" / "json" / "tencentcloud"
+            json_output_dir.mkdir(parents=True, exist_ok=True)
+            
+            json_file = json_output_dir / f"tencentcloud_{key}_data_{ts}.json"
             with open(json_file, "w", encoding="utf-8") as jf:
                 json.dump({"product": info, "docs": docs, "timestamp": ts}, jf, ensure_ascii=False, indent=2)
 
@@ -218,7 +226,7 @@ class TencentCloudLinkCollector:
             return False
 
         # 查找最新的文件
-        search_pattern = str(self.output_dir / f"tencent_{key}_links_*.txt")
+        search_pattern = str(self.output_dir / f"tencentcloud_{key}_links_*.txt")
         existing_files = glob.glob(search_pattern)
         if not existing_files:
             return False
