@@ -51,6 +51,9 @@ out/
 *.txt
 *.json
 
+# Debug HTML files
+out/debug/
+
 # Important project files (exceptions to above rules)
 !requirements.txt
 

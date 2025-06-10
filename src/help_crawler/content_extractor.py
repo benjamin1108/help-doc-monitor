@@ -231,7 +231,7 @@ def create_metadata_header(metadata: dict) -> str:
     return f"---\n{yaml.dump(header_data, allow_unicode=True)}---\n\n"
 
 
-async def crawl_and_extract(page, url: str, vendor: str):
+async def crawl_and_extract(page, url: str, vendor: str, save_raw_html: bool = False):
     """
     获取页面HTML，并使用适合该厂商的提取器来处理它。
     """
@@ -239,6 +239,11 @@ async def crawl_and_extract(page, url: str, vendor: str):
         response = await page.goto(url, timeout=60000, wait_until='domcontentloaded')
         html_bytes = await response.body()
         soup = BeautifulSoup(html_bytes, 'lxml')
+
+        # 如果启用了调试模式，保存原始HTML
+        raw_html_content = None
+        if save_raw_html:
+            raw_html_content = html_bytes.decode('utf-8', errors='replace')
 
         # 使用工厂函数获取合适的提取器
         extractor = get_extractor(vendor, soup, url)
@@ -258,17 +263,23 @@ async def crawl_and_extract(page, url: str, vendor: str):
         if txt_content:
             txt_content = txt_content.replace('\ufeff', '')
         
-        return {
+        result = {
             "title": extracted_data.get('title'),
             "md_content": md_content,
             "txt_content": txt_content,
         }
+        
+        # 如果启用了调试模式，将原始HTML添加到结果中
+        if save_raw_html and raw_html_content:
+            result["raw_html"] = raw_html_content
+        
+        return result
     except Exception as e:
         CONSOLE.log(f"[red]❌ 爬取 {url} 时出错: {e}[/red]")
         return None
 
 
-def save_content(output_dir: Path, metadata: dict, output_formats: list = ['md']):
+def save_content(output_dir: Path, metadata: dict, output_formats: list = ['md'], save_raw_html: bool = False):
     """将提取的内容和元数据保存为文件。"""
     vendor = metadata.get('vendor', 'unknown')
     product = metadata.get('product', 'unknown')
@@ -294,4 +305,17 @@ def save_content(output_dir: Path, metadata: dict, output_formats: list = ['md']
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(metadata_header + content_to_save)
             except Exception as e:
-                CONSOLE.log(f"[red]❌ 保存文件 {file_path} 时出错: {e}[/red]") 
+                CONSOLE.log(f"[red]❌ 保存文件 {file_path} 时出错: {e}[/red]")
+    
+    # 如果启用了调试模式，保存原始HTML
+    if save_raw_html and metadata.get('raw_html'):
+        debug_dir = output_dir / 'debug' / vendor / product
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        
+        html_file_path = debug_dir / f"{safe_filename}.html"
+        try:
+            with open(html_file_path, 'w', encoding='utf-8') as f:
+                f.write(metadata['raw_html'])
+            CONSOLE.log(f"[green]✅ 已保存原始HTML: {html_file_path}[/green]")
+        except Exception as e:
+            CONSOLE.log(f"[red]❌ 保存原始HTML {html_file_path} 时出错: {e}[/red]") 

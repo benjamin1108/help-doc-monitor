@@ -262,6 +262,14 @@ async def process_vendor_product(vendor: str, product: str = None):
     """处理指定厂商和产品的内容提取"""
     content_base_dir = Path("out/content")
     
+    # 获取厂商配置信息
+    vendor_config = config_loader.get_vendor_config(vendor)
+    crawler_settings = vendor_config.get('crawler_settings', {})
+    save_raw_html = crawler_settings.get('save_raw_html', False)
+    
+    if save_raw_html:
+        CONSOLE.print(f"[yellow]🐛 调试模式已启用，将保存原始HTML到debug目录[/yellow]")
+    
     # 查找对应的链接文件
     link_files = find_link_files(vendor, product)
     
@@ -294,7 +302,7 @@ async def process_vendor_product(vendor: str, product: str = None):
                 task = progress.add_task(f"[green]爬取 {vendor_name}/{product_key}", total=len(documents_to_crawl))
 
                 for doc in documents_to_crawl:
-                    extracted_data = await crawl_and_extract(page, doc['url'], vendor_name)
+                    extracted_data = await crawl_and_extract(page, doc['url'], vendor_name, save_raw_html)
                     if extracted_data:
                         full_metadata = {
                             "url": doc['url'],
@@ -308,7 +316,7 @@ async def process_vendor_product(vendor: str, product: str = None):
                         if not full_metadata["title"] or full_metadata["title"] == "Untitled":
                             full_metadata["title"] = doc['title']
 
-                        save_content(content_base_dir, full_metadata, OUTPUT_FORMATS)
+                        save_content(content_base_dir, full_metadata, OUTPUT_FORMATS, save_raw_html)
                     
                     progress.update(task, advance=1)
 
@@ -380,12 +388,20 @@ async def main():
             parser.print_help()
             return
 
+        # 获取厂商配置信息
+        vendor_config = config_loader.get_vendor_config(args.vendor)
+        crawler_settings = vendor_config.get('crawler_settings', {})
+        save_raw_html = crawler_settings.get('save_raw_html', False)
+        
+        if save_raw_html:
+            CONSOLE.print(f"[yellow]🐛 调试模式已启用，将保存原始HTML到debug目录[/yellow]")
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
 
             CONSOLE.log(f"[bold cyan]Processing single URL: {args.url}[/bold cyan]")
-            extracted_data = await crawl_and_extract(page, args.url, args.vendor)
+            extracted_data = await crawl_and_extract(page, args.url, args.vendor, save_raw_html)
             if extracted_data:
                 full_metadata = {
                     "url": args.url,
@@ -394,7 +410,7 @@ async def main():
                     "crawl_time": datetime.now().isoformat(),
                     **extracted_data
                 }
-                save_content(content_base_dir, full_metadata, OUTPUT_FORMATS)
+                save_content(content_base_dir, full_metadata, OUTPUT_FORMATS, save_raw_html)
                 CONSOLE.log(f"[bold green]✔ Saved output to out/content/{args.vendor}/single_url/[/bold green]")
             
             await browser.close()
@@ -430,6 +446,11 @@ async def main():
             product_match = re.search(r"(\w+)_links_", link_file.name.replace(f"{vendor}_", ""))
             product_key = product_match.group(1) if product_match else "unknown"
 
+            # 获取该厂商的配置信息
+            vendor_config = config_loader.get_vendor_config(vendor)
+            crawler_settings = vendor_config.get('crawler_settings', {})
+            save_raw_html = crawler_settings.get('save_raw_html', False)
+
             documents_to_crawl = parse_link_file(link_file)
             if not documents_to_crawl:
                 CONSOLE.log(f"[yellow]在 {link_file} 中未找到文档。跳过。[/yellow]")
@@ -439,7 +460,7 @@ async def main():
                 task = progress.add_task(f"[green]爬取 {vendor}/{product_key}", total=len(documents_to_crawl))
 
                 for doc in documents_to_crawl:
-                    extracted_data = await crawl_and_extract(page, doc['url'], vendor)
+                    extracted_data = await crawl_and_extract(page, doc['url'], vendor, save_raw_html)
                     if extracted_data:
                         full_metadata = {
                             "url": doc['url'],
@@ -453,7 +474,7 @@ async def main():
                         if not full_metadata["title"] or full_metadata["title"] == "Untitled":
                             full_metadata["title"] = doc['title']
 
-                        save_content(content_base_dir, full_metadata, OUTPUT_FORMATS)
+                        save_content(content_base_dir, full_metadata, OUTPUT_FORMATS, save_raw_html)
                     
                     progress.update(task, advance=1)
 

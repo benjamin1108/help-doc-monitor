@@ -375,6 +375,47 @@ out/
 
 ## 🔧 高级配置
 
+### 调试模式（保存原始HTML）
+
+为了帮助调试页面重定向问题和内容提取器配置，您可以启用原始HTML保存功能：
+
+1. **在厂商配置文件中启用调试模式**
+
+```yaml
+# 例如在 config/huaweicloud.yaml 中启用
+crawler_settings:
+  headless: true
+  wait_timeout: 20000
+  click_delay: 0.2
+  crawl_delay: 0.5
+  debug_mode: false
+  save_raw_html: true  # 启用原始HTML保存
+```
+
+2. **运行内容提取**
+
+```bash
+# 启用调试模式后运行
+python run_content_extractor.py --vendor huaweicloud --product vpc
+```
+
+3. **查看调试文件**
+
+原始HTML文件将保存到 `out/debug/` 目录：
+```
+out/debug/
+└── huaweicloud/
+    └── vpc/
+        ├── 弹性网卡概述.html
+        ├── 创建弹性网卡.html
+        └── ...
+```
+
+这些HTML文件可以帮助您：
+- 分析华为云等平台的重定向行为
+- 调试内容提取器的选择器配置
+- 对比原始页面与提取结果的差异
+
 ### 添加新产品
 
 1. **在对应厂商的配置文件中添加产品配置**

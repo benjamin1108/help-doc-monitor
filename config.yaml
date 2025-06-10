@@ -36,6 +36,7 @@ default_settings:
     click_delay: 0.2
     crawl_delay: 0.5
     debug_mode: false
+    save_raw_html: false  # 调试选项：是否保存原始HTML
   
   output_settings:
     base_dir: "out"
